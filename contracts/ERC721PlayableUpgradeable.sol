@@ -9,12 +9,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "./IERC721Playable.sol";
+import "./ERC721PlayableBase.sol";
 
-contract ERC721PlayableUpgradeable is IERC721Playable, ERC721Upgradeable {
+contract ERC721PlayableUpgradeable is ERC721PlayableBase, ERC721Upgradeable {
   using AddressUpgradeable for address;
-
-  mapping(uint256 => mapping(address => Attributes)) internal _attributes;
 
   // solhint-disable-next-line
   function __ERC721Playable_init(string memory name_, string memory symbol_) internal initializer {
@@ -33,22 +31,10 @@ contract ERC721PlayableUpgradeable is IERC721Playable, ERC721Upgradeable {
     return interfaceId == type(IERC721Playable).interfaceId || super.supportsInterface(interfaceId);
   }
 
-  function attributesOf(uint256 _tokenId, address _player) public view override returns (Attributes memory) {
-    return _attributes[_tokenId][_player];
-  }
-
-  function _emptyAttributesArray() internal pure returns (uint8[31] memory) {
-    uint8[31] memory arr;
-    return arr;
-  }
-
   function initAttributes(uint256 _tokenId, address _player) external override returns (bool) {
     // called by the nft's owner
-    require(_player.isContract(), "ERC721Playable: _player not a contract");
     require(ownerOf(_tokenId) == _msgSender(), "ERC721Playable: not the token owner");
-    require(_attributes[_tokenId][_player].version == 0, "ERC721Playable: player already initialized");
-    _attributes[_tokenId][_player] = Attributes({version: 1, attributes: _emptyAttributesArray()});
-    return true;
+    return _initEmptyAttributes(_tokenId, _player);
   }
 
   function updateAttributes(
@@ -57,27 +43,27 @@ contract ERC721PlayableUpgradeable is IERC721Playable, ERC721Upgradeable {
     uint256[] memory _indexes,
     uint8[] memory _values
   ) public override returns (bool) {
-    // called by a previously initiated player
-    require(_indexes.length == _values.length, "ERC721Playable: inconsistent lengths");
-    require(_attributes[_tokenId][_msgSender()].version > 0, "ERC721Playable: player not initialized");
-    if (_newVersion > _attributes[_tokenId][_msgSender()].version) {
-      _attributes[_tokenId][_msgSender()].version = _newVersion;
-    }
-    for (uint256 i = 0; i < _indexes.length; i++) {
-      _attributes[_tokenId][_msgSender()].attributes[_indexes[i]] = _values[i];
-    }
-    return true;
+    return _updateAttributes(_msgSender(), _tokenId, _newVersion, _indexes, _values);
   }
 
-  // this internal function can be called by the mint function to pre-initialize a token
+  // these internal functions can be called to pre-initialize a token before minting it
+
   function _initAttributesAndSafeMint(
     address _to,
     uint256 _tokenId,
     address _player,
     uint8[31] memory _initialAttributes
   ) internal {
-    require(_player.isContract(), "ERC721PlayableUpgradeable: player not a contract");
-    _attributes[_tokenId][_player] = Attributes({version: 1, attributes: _initialAttributes});
     _safeMint(_to, _tokenId);
+    _initPrefilledAttributes(_tokenId, _player, _initialAttributes);
+  }
+
+  function _initEmptyAttributesAndSafeMint(
+    address _to,
+    uint256 _tokenId,
+    address _player
+  ) internal {
+    _safeMint(_to, _tokenId);
+    _initEmptyAttributes(_tokenId, _player);
   }
 }
