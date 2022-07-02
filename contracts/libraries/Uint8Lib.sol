@@ -9,7 +9,7 @@ pragma solidity ^0.8.0;
 
 library Uint8Lib {
   function uint16ToUint8s(uint16 value) public pure returns (uint8[2] memory) {
-    return [uint8(value & 0xff), uint8(value >> 8)];
+    return [uint8(value), uint8(value >> 8)];
   }
 
   function uint8ToUint16(uint8[2] calldata values) public pure returns (uint16) {
@@ -17,7 +17,7 @@ library Uint8Lib {
   }
 
   function uint32ToUint8s(uint32 value) public pure returns (uint8[4] memory) {
-    return [uint8(value & 0x000000ff), uint8(value >> 8), uint8(value >> 16), uint8(value >> 24)];
+    return [uint8(value), uint8(value >> 8), uint8(value >> 16), uint8(value >> 24)];
   }
 
   function uint8ToUint32(uint8[4] memory values) public pure returns (uint32) {
@@ -26,7 +26,7 @@ library Uint8Lib {
 
   function uint64ToUint8s(uint64 value) public pure returns (uint8[8] memory) {
     return [
-      uint8(value & 0x000000ff),
+      uint8(value),
       uint8(value >> 8),
       uint8(value >> 16),
       uint8(value >> 24),
